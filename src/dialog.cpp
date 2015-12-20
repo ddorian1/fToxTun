@@ -41,6 +41,12 @@ void Dialog::notify(const char *text) {
 	while (d.shown()) Fl::wait();
 }
 
+void Dialog::notifyAndDelete(void *textV) {
+	char* text = static_cast<char*>(textV);
+	notify(text);
+	delete[] text;
+}
+
 bool Dialog::confirm(const char *text) {
 	Dialog d(text, true);
 	while (d.shown()) Fl::wait();

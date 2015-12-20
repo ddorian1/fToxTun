@@ -162,15 +162,21 @@ void MainWindow::onTunButtonConnect(Fl_Widget *button, void *mainWindowV) {
 		if (f.second.value()) friendNumber = f.first;
 	}
 
-	mw->toxWorker->tunConnect(friendNumber);
-	mw->tunButtonToConnecting();
+	if (mw->toxWorker->tunConnect(friendNumber)) {
+		mw->tunButtonToConnecting();
+	}
 }
 
 void MainWindow::onTunButtonClose(Fl_Widget *button, void *mainWindowV) {
 	MainWindow *mw = static_cast<MainWindow*>(mainWindowV);
 	if (!mw->toxWorker) return;
 
-	mw->toxWorker->tunClose();
+	uint32_t friendNumber;
+	for (auto &f : mw->friendList) {
+		if (f.second.value()) friendNumber = f.first;
+	}
+
+	mw->toxWorker->tunClose(friendNumber);
 	mw->tunButtonToConnect();
 }
 
@@ -183,8 +189,9 @@ void MainWindow::onTunButtonAccept(Fl_Widget *button, void *mainWindowV) {
 		if (f.second.value()) friendNumber = f.first;
 	}
 	
-	mw->toxWorker->tunAccept(friendNumber);
-	mw->tunButtonToClose();
+	if (mw->toxWorker->tunAccept(friendNumber)) {
+		mw->tunButtonToClose();
+	}
 }
 
 void MainWindow::friendAdd(void *tV) {
