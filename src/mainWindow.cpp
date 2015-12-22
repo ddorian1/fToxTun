@@ -58,7 +58,7 @@ void MainWindow::selfDisconnected(void *mainWindowV) {
 
 void MainWindow::setName(void *pV) {
 	auto p = static_cast<std::pair<MainWindow*, std::string>*>(pV);
-	p->first->name.label(p->second.c_str());
+	p->first->name.copy_label(p->second.c_str());
 	p->first->name.redraw();
 	delete p;
 }
