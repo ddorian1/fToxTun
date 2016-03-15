@@ -1,10 +1,11 @@
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
+#include "friendsWidget.h"
+
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Output.H>
-#include <FL/Fl_Scroll.H>
 #include <FL/Fl_Window.H>
 #include <map>
 
@@ -20,8 +21,7 @@ class MainWindow : public Fl_Window {
 		Fl_Button buttonTun, buttonFriendAdd, buttonFriendDelete, buttonChangeName;
 		Fl_Box connectionState, lname, name, laddress;
 		Fl_Output address;
-		Fl_Scroll friendArea;
-		std::map<uint32_t, Fl_Button> friendList;
+		FriendsWidget friendsWidget;
 
 		void tunButtonToConnect();
 		void tunButtonToConnecting();
@@ -31,7 +31,6 @@ class MainWindow : public Fl_Window {
 		static void onFriendAdd(Fl_Widget *button, void *mainWindowV);
 		static void onFriendDelete(Fl_Widget *button, void *mainWindowV);
 		static void onChangeName(Fl_Widget *button, void *mainWindowV);
-		static void onFriendList(Fl_Widget *button, void *mainWindowV);
 		static void onTunButtonConnect(Fl_Widget *button, void *mainWindowV);
 		static void onTunButtonClose(Fl_Widget *button, void *mainWindowV);
 		static void onTunButtonAccept(Fl_Widget *button, void *mainWindowV);
@@ -52,6 +51,7 @@ class MainWindow : public Fl_Window {
 		static void connectionAccepted(void *pV);
 		static void connectionRejected(void *pV);
 		static void connectionClosed(void *pV);
+		void selectedFriendChanged(void *mainWindowV);
 };
 
 #endif //MAIN_WINDOWS_H

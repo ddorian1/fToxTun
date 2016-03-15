@@ -47,6 +47,7 @@ class ToxWorker {
 		bool tunConnect(uint32_t friendNumber);
 		void tunClose(uint32_t friendNumber);
 		bool tunAccept(uint32_t friendNumber);
+		ToxTun::ConnectionState getConnectionState(uint32_t friendNumber);
 };
 
 #endif //TOX_WORKER_H

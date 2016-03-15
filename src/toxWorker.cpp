@@ -332,3 +332,8 @@ void ToxWorker::toxTunCb(ToxTun::Event event, uint32_t friendNumber, void *mainW
 			break;
 	}
 }
+
+ToxTun::ConnectionState ToxWorker::getConnectionState(uint32_t friendNumber) {
+	LockGuard l(mutex);
+	return toxTun->getConnectionState(friendNumber);
+}

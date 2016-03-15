@@ -20,7 +20,7 @@ MainWindow::MainWindow()
 	name(w/2+5, 30, w/2-60, 20),
 	laddress(w/2+5, 70, w/2-10, 20, "Your Address:"),
 	address(w/2+5, 95, w/2-10, 20),
-	friendArea(5, 20, w/2-10, h-60, "Friends")
+	friendsWidget(this, 5, 20, w/2-10, h-60)
 {
 	buttonFriendAdd.callback(onFriendAdd, this);
 	buttonFriendDelete.callback(onFriendDelete, this);
@@ -34,8 +34,6 @@ MainWindow::MainWindow()
 
 	connectionState.box(FL_OFLAT_BOX);
 	selfDisconnected(this);
-
-	friendArea.type(Fl_Scroll::VERTICAL_ALWAYS);
 
 	end();
 }
@@ -86,15 +84,11 @@ void MainWindow::onFriendDelete(Fl_Widget *button, void *mainWindowV) {
 	MainWindow *mw = static_cast<MainWindow*>(mainWindowV);
 	if (!mw->toxWorker) return;
 
-	uint32_t friendNumber;
-	for (auto &f : mw->friendList) {
-		if (f.second.value()) friendNumber = f.first;
-	}
+	uint32_t friendNumber = mw->friendsWidget.getSelectedFriend();
 
 	if (Dialog::confirm("Delete selected friend?")) {
 		mw->toxWorker->deleteFriend(friendNumber);
-		mw->friendList.erase(friendNumber);
-		mw->friendArea.redraw();
+		mw->friendsWidget.deleteFriend(friendNumber);
 	}
 }
 
@@ -103,64 +97,42 @@ void MainWindow::onChangeName(Fl_Widget *button, void *mainWindowV) {
 	if (!mw->toxWorker) return;
 	
 	std::string name = TextInput::get("New Name");
+	if (name.empty()) return;
+
 	mw->toxWorker->changeName(name);
 	mw->name.copy_label(name.c_str());
 	mw->name.redraw();
 }
 
 void MainWindow::tunButtonToConnecting() {
-	for (auto &f : friendList) {
-		f.second.deactivate();
-	}
-
 	buttonTun.copy_label("Connecting...");
 	buttonTun.labelcolor(fl_rgb_color(255, 215, 0));
 	buttonTun.callback(onTunButtonClose, this);
 }
 
 void MainWindow::tunButtonToConnect() {
-	for (auto &f : friendList) {
-		f.second.activate();
-	}
-
 	buttonTun.copy_label("Connect");
 	buttonTun.labelcolor(fl_rgb_color(0, 255, 0));
 	buttonTun.callback(onTunButtonConnect, this);
 }
 
 void MainWindow::tunButtonToClose() {
-	for (auto &f : friendList) {
-		f.second.deactivate();
-	}
-	
 	buttonTun.copy_label("Connected");
 	buttonTun.labelcolor(fl_rgb_color(255, 0, 0));
 	buttonTun.callback(onTunButtonClose, this);
 }
 
 void MainWindow::tunButtonToAccept() {
-	for (auto &f : friendList) {
-		f.second.deactivate();
-	}
-	
 	buttonTun.copy_label("Accept connection");
 	buttonTun.labelcolor(fl_rgb_color(255, 215, 0));
 	buttonTun.callback(onTunButtonAccept, this);
-}
-
-void MainWindow::onFriendList(Fl_Widget *button, void *mainWindowV) {
-	MainWindow *mw = static_cast<MainWindow*>(mainWindowV);
-	mw->buttonTun.activate();
 }
 
 void MainWindow::onTunButtonConnect(Fl_Widget *button, void *mainWindowV) {
 	MainWindow *mw = static_cast<MainWindow*>(mainWindowV);
 	if (!mw->toxWorker) return;
 
-	uint32_t friendNumber;
-	for (auto &f : mw->friendList) {
-		if (f.second.value()) friendNumber = f.first;
-	}
+	uint32_t friendNumber = mw->friendsWidget.getSelectedFriend();
 
 	if (mw->toxWorker->tunConnect(friendNumber)) {
 		mw->tunButtonToConnecting();
@@ -171,10 +143,7 @@ void MainWindow::onTunButtonClose(Fl_Widget *button, void *mainWindowV) {
 	MainWindow *mw = static_cast<MainWindow*>(mainWindowV);
 	if (!mw->toxWorker) return;
 
-	uint32_t friendNumber;
-	for (auto &f : mw->friendList) {
-		if (f.second.value()) friendNumber = f.first;
-	}
+	uint32_t friendNumber = mw->friendsWidget.getSelectedFriend();
 
 	mw->toxWorker->tunClose(friendNumber);
 	mw->tunButtonToConnect();
@@ -184,10 +153,7 @@ void MainWindow::onTunButtonAccept(Fl_Widget *button, void *mainWindowV) {
 	MainWindow *mw = static_cast<MainWindow*>(mainWindowV);
 	if (!mw->toxWorker) return;
 
-	uint32_t friendNumber;
-	for (auto &f : mw->friendList) {
-		if (f.second.value()) friendNumber = f.first;
-	}
+	uint32_t friendNumber = mw->friendsWidget.getSelectedFriend();
 	
 	if (mw->toxWorker->tunAccept(friendNumber)) {
 		mw->tunButtonToClose();
@@ -201,33 +167,19 @@ void MainWindow::friendAdd(void *tV) {
 	auto t = static_cast<std::tuple<MainWindow*, uint32_t, std::string>*>(tV);
 	std::tie(mw, friendNumber, friendName) = *t;
 
-	size_t posH = 20 + 25*mw->friendList.size();
-	Fl_Group::current(&(mw->friendArea));
-	mw->friendList.emplace(std::piecewise_construct, 
-			std::forward_as_tuple(friendNumber),
-			std::forward_as_tuple(5, posH, w/2-30, 20)
-	);
-	mw->friendList.at(friendNumber).copy_label(friendName.c_str());
-	mw->friendList.at(friendNumber).callback(onFriendList, std::get<0>(*t));
-	mw->friendList.at(friendNumber).type(102);
-	mw->friendList.at(friendNumber).labelcolor(fl_rgb_color(255, 0, 0));
-	mw->friendList.at(friendNumber).show();
-	mw->redraw();
-	mw->end();
+	mw->friendsWidget.addFriend(friendNumber, friendName);
 	delete t;
 }
 
 void MainWindow::friendOnline(void *pV) {
 	auto p = static_cast<std::pair<MainWindow*, uint32_t>*>(pV);
-	p->first->friendList.at(p->second).labelcolor(fl_rgb_color(0, 255, 0));
-	p->first->friendList.at(p->second).redraw();
+	p->first->friendsWidget.friendOnline(p->second);
 	delete p;
 }
 
 void MainWindow::friendOffline(void *pV) {
 	auto p = static_cast<std::pair<MainWindow*, uint32_t>*>(pV);
-	p->first->friendList.at(p->second).labelcolor(fl_rgb_color(255, 0, 0));
-	p->first->friendList.at(p->second).redraw();
+	p->first->friendsWidget.friendOffline(p->second);
 	delete p;
 }
 
@@ -238,16 +190,13 @@ void MainWindow::friendNameChanged(void *tV) {
 	auto t = static_cast<std::tuple<MainWindow*, uint32_t, std::string>*>(tV);
 	std::tie(mw, friendNumber, friendName) = *t;
 
-	mw->friendList.at(friendNumber).copy_label(friendName.c_str());
-	mw->friendList.at(friendNumber).redraw();
+	mw->friendsWidget.changeName(friendNumber, friendName);
 	delete t;
 }
 
 void MainWindow::connectionRequest(void *pV) {
 	auto p = static_cast<std::pair<MainWindow*, uint32_t>*>(pV);
-	for (auto &f : p->first->friendList) {
-		f.second.value(f.first == p->second);
-	}
+	p->first->friendsWidget.setSelectedFriend(p->second);
 
 	p->first->buttonTun.activate();
 	p->first->tunButtonToAccept();
@@ -270,4 +219,29 @@ void MainWindow::connectionClosed(void *pV) {
 	auto p = static_cast<std::pair<MainWindow*, uint32_t>*>(pV);
 	p->first->tunButtonToConnect();
 	delete p;
+}
+
+void MainWindow::selectedFriendChanged(void *MainWindowV) {
+	MainWindow *mw = static_cast<MainWindow*>(MainWindowV);
+
+	uint32_t sf = mw->friendsWidget.getSelectedFriend();
+	ToxTun::ConnectionState cs = mw->toxWorker->getConnectionState(sf);
+
+	mw->buttonTun.activate();
+
+	switch(cs) {
+		case ToxTun::ConnectionState::Connected:
+			mw->tunButtonToClose();
+			break;
+		case ToxTun::ConnectionState::Disconnected:
+			mw->tunButtonToConnect();
+			//TODO if (!friend is online) buttonTun.deactivate();
+			break;
+		case ToxTun::ConnectionState::FriendIsRinging:
+			mw->tunButtonToAccept();
+			break;
+		case ToxTun::ConnectionState::RingingAtFriend:
+			mw->tunButtonToConnecting();
+			break;
+	}
 }
