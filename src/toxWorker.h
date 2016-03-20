@@ -44,9 +44,10 @@ class ToxWorker {
 		int64_t addFriend(std::string address);
 		void deleteFriend(uint32_t friendNumber);
 		void changeName(std::string name);
-		void tunConnect(uint32_t friendNumber);
-		void tunClose();
-		void tunAccept(uint32_t friendNumber);
+		bool tunConnect(uint32_t friendNumber);
+		void tunClose(uint32_t friendNumber);
+		bool tunAccept(uint32_t friendNumber);
+		ToxTun::ConnectionState getConnectionState(uint32_t friendNumber);
 };
 
 #endif //TOX_WORKER_H

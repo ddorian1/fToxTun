@@ -3,6 +3,8 @@ bin_PROGRAMS = fToxTun
 fToxTun_SOURCES = \
 	dialog.cpp \
 	dialog.h \
+	friendsWidget.cpp \
+	friendsWidget.h \
 	fToxTun.cpp \
 	mainWindow.cpp \
 	mainWindow.h \

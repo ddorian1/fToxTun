@@ -1,5 +1,6 @@
 #include "mainWindow.h"
 #include "toxWorker.h"
+#include "dialog.h"
 
 #include <FL/Fl.H>
 #include <tox/tox.h>
@@ -11,6 +12,7 @@
 #include <sstream>
 #include <tuple>
 #include <vector>
+#include <cstring>
 
 ToxWorker::ToxWorker(MainWindow *mainWindow)
 :
@@ -253,19 +255,43 @@ void ToxWorker::changeName(std::string name) {
 	tox_self_set_name(tox, reinterpret_cast<uint8_t*>(&name[0]), name.size(), nullptr);
 }
 
-void ToxWorker::tunConnect(uint32_t friendNumber) {
+bool ToxWorker::tunConnect(uint32_t friendNumber) {
 	LockGuard l(mutex);
-	toxTun->sendConnectionRequest(friendNumber);
+	try {
+		toxTun->sendConnectionRequest(friendNumber);
+	} catch (ToxTunError &error) {
+		const size_t len = std::strlen(error.what());
+		char *text = new char[len + 1];
+		std::strncpy(text, error.what(), len + 1);
+		text[len] = '\0';
+
+		Fl::awake(Dialog::notifyAndDelete, text);
+		return false;
+	}
+
+	return true;
 }
 
-void ToxWorker::tunClose() {
+void ToxWorker::tunClose(uint32_t friendNumber) {
 	LockGuard l(mutex);
-	toxTun->closeConnection();
+	toxTun->closeConnection(friendNumber);
 }
 
-void ToxWorker::tunAccept(uint32_t friendNumber) {
+bool ToxWorker::tunAccept(uint32_t friendNumber) {
 	LockGuard l(mutex);
-	toxTun->acceptConnection(friendNumber);
+	try {
+		toxTun->acceptConnection(friendNumber);
+	} catch (ToxTunError &error) {
+		const size_t len = std::strlen(error.what());
+		char *text = new char[len + 1];
+		std::strncpy(text, error.what(), len + 1);
+		text[len] = '\0';
+
+		Fl::awake(Dialog::notifyAndDelete, text);
+		return false;
+	}
+
+	return true;
 }
 
 void ToxWorker::friendNameCb(Tox *tox, uint32_t friendNumber, const uint8_t *name, size_t length, void *mainWindowV) {
@@ -305,4 +331,9 @@ void ToxWorker::toxTunCb(ToxTun::Event event, uint32_t friendNumber, void *mainW
 			Fl::awake(mw->connectionClosed, p);
 			break;
 	}
+}
+
+ToxTun::ConnectionState ToxWorker::getConnectionState(uint32_t friendNumber) {
+	LockGuard l(mutex);
+	return toxTun->getConnectionState(friendNumber);
 }

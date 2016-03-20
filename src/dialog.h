@@ -21,7 +21,8 @@ class Dialog : public Fl_Window {
 		Dialog(const char* text, bool cancel=false);
 
 	public:
-		static void notify(const char *hint);
+		static void notify(const char *text);
+		static void notifyAndDelete(void *textV);
 		static bool confirm(const char *hint);
 };
 
