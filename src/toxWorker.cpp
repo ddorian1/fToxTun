@@ -156,7 +156,7 @@ void* ToxWorker::backgroundJob(void *twV) {
 			if (tw->quit) break;
 			tox_iterate(tw->tox);
 			tw->toxTun->iterate();
-			t = std::chrono::milliseconds(tox_iteration_interval(tw->tox));
+			t = tw->toxTun->iterationInterval();
 		}
 #ifdef _WIN32
 		Sleep(t.count());
